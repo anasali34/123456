@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="ku">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>سیستەمی فرۆشتنی کوردی</title>
+
+<style>
+body{
+  font-family:Arial;
+  background:#eef2f7;
+  margin:0;
+}
+
+.header{
+  background:#1976d2;
+  color:#fff;
+  padding:10px;
+  text-align:center;
+}
+
+.box{padding:10px;}
+
+.card{
+  background:#fff;
+  padding:10px;
+  border-radius:10px;
+  margin:8px 0;
+}
+
+button{
+  width:100%;
+  padding:7px;
+  margin-top:5px;
+  background:#1976d2;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  font-size:12px;
+}
+
+input{
+  width:100%;
+  padding:8px;
+  margin:5px 0;
+}
+
+.footer{
+  position:fixed;
+  bottom:0;
+  left:0;
+  right:0;
+
+  background:#fff;
+  padding:3px;
+
+  text-align:center;
+  font-size:11px;
+
+  box-shadow:0 -1px 4px rgba(0,0,0,0.1);
+}
+
+.hide{display:none;}
+</style>
+</head>
+
+<body>
+
+<div class="header">🏪 سیستەمی فرۆشتنی کوردی</div>
+
+<div class="box">
+
+<!-- LOGIN -->
+<div id="loginBox">
+  <h3>🔐 چوونەژوورەوە</h3>
+  <input id="user" placeholder="ناوی بەکارهێنەر">
+  <input id="pass" type="password" placeholder="وشەی نهێنی">
+  <button onclick="login()">چوونەژوور</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="hide">
+
+<h3 id="roleText"></h3>
+
+<!-- ADD PRODUCT (ADMIN) -->
+<div id="adminBox" class="hide">
+
+<h3>📦 زیادکردنی کاڵا</h3>
+
+<input id="pname" placeholder="ناوی کاڵا">
+<input id="pprice" placeholder="نرخ">
+<input id="pstock" placeholder="کۆگا">
+
+<button onclick="addProduct()">زیادکردن</button>
+
+</div>
+
+<hr>
+
+<h3>📦 کاڵاکان</h3>
+<div id="plist"></div>
+
+<hr>
+
+<h3>🛒 سەبەتە</h3>
+<div id="cartBox"></div>
+
+</div>
+
+<!-- 💰 TOTAL (SMALL BOTTOM FIXED) -->
+<div class="footer">
+💰 کۆی:
+<span id="total" style="font-weight:bold;color:#1976d2;">0</span> $
+</div>
+
+<script>
+
+/* USERS */
+let users=[
+  {u:"admin",p:"1122",role:"admin"},
+  {u:"staff",p:"1133",role:"cashier"}
+];
+
+let role="";
+
+let products=JSON.parse(localStorage.getItem("products")||"[]");
+let cart=[];
+
+/* LOGIN */
+function login(){
+
+  let ok=users.find(x=>x.u==user.value && x.p==pass.value);
+
+  if(!ok) return alert("❌ هەڵەی login");
+
+  role=ok.role;
+
+  loginBox.classList.add("hide");
+  app.classList.remove("hide");
+
+  roleText.innerHTML="👤 رول: "+role;
+
+  if(role=="admin"){
+    adminBox.classList.remove("hide");
+  }
+
+  render();
+}
+
+/* ADD PRODUCT */
+function addProduct(){
+
+  let name=pname.value.trim();
+  let price=Number(pprice.value);
+  let stock=Number(pstock.value);
+
+  if(!name || !price){
+    alert("❌ پڕ بکە");
+    return;
+  }
+
+  products.push({name,price,stock});
+
+  localStorage.setItem("products",JSON.stringify(products));
+
+  pname.value="";
+  pprice.value="";
+  pstock.value="";
+
+  render();
+}
+
+/* DELETE PRODUCT */
+function deleteProduct(i){
+
+  if(role!="admin") return;
+
+  products.splice(i,1);
+
+  localStorage.setItem("products",JSON.stringify(products));
+
+  render();
+}
+
+/* ADD TO CART */
+function addToCart(i){
+
+  let p=products[i];
+
+  let item=cart.find(x=>x.name==p.name);
+
+  if(item) item.qty++;
+  else cart.push({name:p.name,price:p.price,qty:1});
+
+  renderCart();
+}
+
+function plus(i){cart[i].qty++;renderCart();}
+function minus(i){cart[i].qty--;if(cart[i].qty<=0)cart.splice(i,1);renderCart();}
+
+/* RENDER PRODUCTS */
+function render(){
+
+  plist.innerHTML="";
+
+  products.forEach((p,i)=>{
+
+    plist.innerHTML+=`
+      <div class="card">
+        🛒 ${p.name}<br>
+        💰 ${p.price}$
+
+        <button onclick="addToCart(${i})">زیادکردن</button>
+
+        ${role=="admin"?`<button style="background:red" onclick="deleteProduct(${i})">🗑️ سڕینەوە</button>`:""}
+      </div>
+    `;
+  });
+
+  renderCart();
+}
+
+/* CART */
+function renderCart(){
+
+  cartBox.innerHTML="";
+
+  let total=0;
+
+  cart.forEach((c,i)=>{
+
+    let t=c.price*c.qty;
+    total+=t;
+
+    cartBox.innerHTML+=`
+      <div class="card">
+        ${c.name}<br>
+        ژمارە: ${c.qty}<br>
+        کۆ: ${t}$
+
+        <button onclick="plus(${i})">+</button>
+        <button onclick="minus(${i})">-</button>
+      </div>
+    `;
+  });
+
+  document.getElementById("total").innerText=total.toFixed(2);
+}
+
+render();
+
+</script>
+
+</body>
+</html>
